@@ -1,0 +1,151 @@
+Finance plot for LILAC
+========================================================
+
+
+
+```{r}
+f <- read.csv("F2.csv")
+f
+```
+
+```{r}
+(p <- ggplot(f, aes(x = H, y = Allocation)) + 
+   geom_bar(color = "black", stat="identity", width=1) )
+p + coord_polar()
+
+# adding width - 
+# http://stackoverflow.com/questions/20688376/how-to-make-variable-bar-widths-in-ggplot2-not-overlap-or-gap
+w <- f$Value 
+pos <- 0.5 * (cumsum(w) + cumsum(c(0, w[-length(w)])))
+
+(p <- ggplot(f, aes(x = pos)) +
+   geom_bar(aes(y = Allocation), width = w, color = "black", stat="identity") )
+p + coord_polar(theta="x") +
+  scale_x_continuous(labels = f$H, breaks = pos)
+```
+
+# Adding the 10 %
+
+```{r}
+f$Deposit / f$Value
+
+# add 10% in there
+p <- ggplot(f)
+p + geom_bar(aes(x = pos, y = Allocation), width = w, color = "black", stat="identity") +
+    geom_bar(aes(x = pos, y = 0.1), width = w, color = "black", stat="identity", fill = "green") +
+  coord_polar()
+
+# make proportional to area
+f$Allo <- sqrt(f$Allocation)
+
+p <- ggplot(f)
+p + geom_bar(aes(x = pos, y = Allo, width = w), color = "black", stat="identity") +
+    geom_bar(aes(x = pos, y = sqrt(0.1), width = w), color = "black", stat="identity", fill = "green") +
+  coord_polar()
+
+# add capital
+capital <- (f$Captial + f$Deposit) / (f$Value) * f$Allocation
+capital <- sqrt(capital) 
+
+p + geom_bar(aes(x = pos, y = Allo, width = w), color = "black", stat="identity") +
+    geom_bar(aes(x = pos, y = capital, width = w), color = "black", stat="identity", fill = "red") +
+    geom_bar(aes(x = pos, y = sqrt(0.1), width = w), color = "black", stat="identity", fill = "green") +
+  coord_polar() +
+  scale_x_continuous(labels = f$H, breaks = pos)
+
+# add ablines
+p + geom_bar(aes(x = pos, y = Allo, width = w), color = "grey40", stat="identity", fill = "lightgrey") +
+    geom_bar(aes(x = pos, y = capital, width = w), color = "grey40", stat="identity", fill = "red") +
+    geom_bar(aes(x = pos, y = sqrt(0.1), width = w), color = "grey40", stat="identity", fill = "green") +
+    geom_abline(intercept = 1, slope = 0, linetype = 2) + 
+    geom_abline(intercept = sqrt(1.1), slope = 0, linetype = 3) + 
+    geom_abline(intercept = sqrt(0.9), slope = 0, linetype = 3) 
+
+# calculate vertical ablines of divisions
+v1 <- 0.51 * f$Value[1]
+v2 <- cumsum(f$Value)[17] + f$Value[18] * 0.31
+v3 <- cumsum(f$Value)[17] + f$Value[18] * 0.64
+
+p + geom_bar(aes(x = pos, y = Allo, width = w), color = "grey40", stat="identity", fill = "lightgrey") +
+  geom_vline(x = v1, linetype = 5) + geom_vline(x = v2, linetype = 5) + geom_vline(x = v3, linetype = 5) +
+  coord_polar()
+
+# putting it all together
+p <- ggplot(f) 
+p + geom_bar(aes(x = pos, y = Allo, width = w), color = "grey40", stat="identity", fill = "lightgrey") +
+    geom_bar(aes(x = pos, y = capital, width = w), color = "grey40", stat="identity", fill = "red") +
+    geom_bar(aes(x = pos, y = sqrt(0.1), width = w), color = "grey40", stat="identity", fill = "green") +
+    geom_abline(intercept = 1, slope = 0, linetype = 2) + 
+    geom_abline(intercept = sqrt(1.1), slope = 0, linetype = 3) + 
+    geom_abline(intercept = sqrt(0.9), slope = 0, linetype = 3) +
+    geom_vline(x = v1, linetype = 5) + geom_vline(x = v2, linetype = 5) + geom_vline(x = v3, linetype = 5) +
+    coord_polar() +
+    scale_x_continuous(labels = f$H, breaks = pos) +
+    theme_classic()
+ggsave("test.png", width = 16, dpi=600, units = "cm")
+```
+
+# Create theme with no axes
+```{r}
+theme_infog <- theme_classic() + theme(axis.line = element_blank(), 
+                                       axis.title = element_blank(),
+                                       axis.ticks = element_blank(),
+                                       axis.text.y = element_blank())
+last_plot() + theme_infog
+```
+
+# Creating a ring
+
+```{r}
+f$Cap.r <- f$Cap/mean(f$Cap) * 0.1 + 1.2
+f$Cont.r <- f$Contribution/mean(f$Cap) * 0.1 + 1.2
+f$Rep.r <- f$Cont.r + f$Repayments/mean(f$Cap) * 0.1
+f$H <- c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j" ,"k", "l", 
+         "m", "n", "o", "p", "q", "r", "s", "t")
+
+p <- ggplot(f) 
+p + geom_bar(aes(x = pos, y = Allo, width = w), color = "grey40", stat="identity", fill = "lightgrey")
+# we need the axes to be bigger for starters - try 1.3 to 1.5
+
+p + geom_bar(aes(x = pos, y = Cap.r, width = w), color = "grey40", stat="identity", fill = "white") +
+    geom_bar(aes(x = pos, y = Rep.r, width = w), color = "grey40", stat="identity", fill = "grey80") +
+    geom_bar(aes(x = pos, y = Cont.r, width = w), color = "grey40", stat="identity", fill = "grey30") + 
+    geom_bar(aes(x = pos, y = 1.196, width = w), color = "white", stat="identity", fill = "white") 
+
+last_plot() +
+  geom_bar(aes(x = pos, y = Allo, width = w), color = "grey40", stat="identity", fill = "grey80") +
+    geom_bar(aes(x = pos, y = capital, width = w), color = "grey40", stat="identity", fill = "grey30") +
+    geom_bar(aes(x = pos, y = sqrt(0.1), width = w), color = "grey40", stat="identity", fill = "black") +
+    geom_abline(intercept = 1, slope = 0, linetype = 5) + 
+    geom_abline(intercept = sqrt(1.1), slope = 0, linetype = 3) + 
+    geom_abline(intercept = sqrt(0.9), slope = 0, linetype = 3) +
+#     geom_line(aes(x = c(v1, v1), y = c(0, 1.3)), color = "white") + 
+#     geom_line(aes(x = c(v2, v2), y = c(0, 1.3)), color = "white") + 
+#     geom_line(aes(x = c(v3, v3), y = c(0, 1.3)), color = "white") + 
+    coord_polar() +
+    scale_x_continuous(labels = f$H, breaks = pos) +
+  theme_infog
+
+ggsave("test4.png", width = 7, height = 7, dpi = 800)
+```
+
+# Just inner
+
+```{r}
+p <- ggplot(f) 
+p + geom_bar(aes(x = pos, y = Allo, width = w), color = "grey40", stat="identity", fill = "grey80") +
+    geom_bar(aes(x = pos, y = capital, width = w), color = "grey40", stat="identity", fill = "grey30") +
+    geom_bar(aes(x = pos, y = sqrt(0.1), width = w), color = "grey40", stat="identity", fill = "black") +
+    geom_abline(intercept = 1, slope = 0, linetype = 5) + 
+    geom_abline(intercept = sqrt(1.1), slope = 0, linetype = 3) + 
+    geom_abline(intercept = sqrt(0.9), slope = 0, linetype = 3) +
+#     geom_line(aes(x = c(v1, v1), y = c(0, 1.3)), color = "white") + 
+#     geom_line(aes(x = c(v2, v2), y = c(0, 1.3)), color = "white") + 
+#     geom_line(aes(x = c(v3, v3), y = c(0, 1.3)), color = "white") + 
+    coord_polar() +
+    scale_x_continuous(labels = f$H, breaks = pos) +
+  theme_infog
+ggsave("just-inner.png", width = 7, height = 7, dpi = 800)
+
+```
+
