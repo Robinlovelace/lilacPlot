@@ -21,13 +21,23 @@ ggplot(d, aes(x = House)) +
   geom_bar(aes(y = MDR), stat = "identity", 
            fill = "grey20", width = 1, color = "black") +
   geom_bar(aes(y = ADR), stat = "identity", 
-           fill = "grey40", width = 1, color = "black") +
+           fill = "grey50", width = 1, color = "black") +
   geom_bar(aes(y = LEF), stat = "identity", 
-           fill = "grey60", width = 1, color = "black") +
+           fill = "grey80", width = 1, color = "black") +
   geom_bar(aes(y = HC), stat = "identity", 
-           fill = "white", width = 1, color = "black") +
+           fill = "white", width = 1, color = "black", size = 0.2) +
+  geom_text(aes(y = d$TAI + 10, label = letters[1:20]), size = 3) +
   coord_polar()
-  
+
+theme_infog <- theme_classic() + theme(axis.line = element_blank(), 
+                                       axis.title = element_blank(),
+                                       axis.ticks = element_blank(),
+                                       axis.text = element_blank())
+last_plot() + theme_infog
+
+# ggsave("income.png")
+ggsave("income.png", width = 7, height = 7, dpi = 800)
+
   
 
 mean(d$H)
